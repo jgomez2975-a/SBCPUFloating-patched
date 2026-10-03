@@ -2922,13 +2922,12 @@ static void applySystemRefreshRate(void) {
 - (void)updateFrameRate {
     if (!_displayLink) return;
 
-    // 仅统计系统实际帧率，不再把用于采样的 CADisplayLink 锁到 60Hz。
-    // preferredFramesPerSecond=0 代表交给系统选择当前显示器真实刷新率，
-    // 否则采样器自身被锁成 60，浮窗永远只能显示 60 FPS。
+    // 采样器只请求显示器允许的最高回调频率，不修改系统/其他 App 的刷新率。
+    // 使用 Default 在 SpringBoard 上可能回退到 60Hz，导致 ProMotion 永远读到 60。
     if (@available(iOS 15.0, *)) {
-        _displayLink.preferredFrameRateRange = CAFrameRateRangeDefault;
+        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(1.0f, 120.0f, 120.0f);
     } else {
-        _displayLink.preferredFramesPerSecond = 0;
+        _displayLink.preferredFramesPerSecond = 120;
     }
     [self stopDriverAnimation];
 }
