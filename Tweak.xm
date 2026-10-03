@@ -2922,25 +2922,15 @@ static void applySystemRefreshRate(void) {
 - (void)updateFrameRate {
     if (!_displayLink) return;
 
-    BOOL apply120 = NO;
-
+    // 仅统计系统实际帧率，不再把用于采样的 CADisplayLink 锁到 60Hz。
+    // preferredFramesPerSecond=0 代表交给系统选择当前显示器真实刷新率，
+    // 否则采样器自身被锁成 60，浮窗永远只能显示 60 FPS。
     if (@available(iOS 15.0, *)) {
-        float targetFps = apply120 ? 120.0f : 60.0f;
-        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(targetFps, targetFps, targetFps);
-        
-        if (apply120) {
-            if ([_displayLink respondsToSelector:@selector(setHighFrameRateReason:)]) {
-                @try {
-                    [_displayLink setValue:@(1114113) forKey:@"highFrameRateReason"];
-                } @catch (id ex) {}
-            }
-            [self startDriverAnimation];
-        } else {
-            [self stopDriverAnimation];
-        }
+        _displayLink.preferredFrameRateRange = CAFrameRateRangeDefault;
     } else {
-        _displayLink.preferredFramesPerSecond = apply120 ? 120 : 60;
+        _displayLink.preferredFramesPerSecond = 0;
     }
+    [self stopDriverAnimation];
 }
 
 - (void)tick:(CADisplayLink *)link {
